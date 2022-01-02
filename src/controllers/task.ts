@@ -1,4 +1,5 @@
 import { promises as fsPromise } from 'fs';
+import { join } from 'path';
 import { Response } from 'express';
 import { validationResult } from 'express-validator';
 import { createObjectCsvWriter } from 'csv-writer';
@@ -117,8 +118,13 @@ const downloadSummary = async (req: Request, res: Response) => {
       };
     });
 
+    const fileName = `${req.user.id}-${
+      new Date().getTime() * Math.random()
+    }.csv`;
+    const path = join(__dirname, `../summary-files/${fileName}`);
+
     const csvWriter = createObjectCsvWriter({
-      path: './src/summary-files/data.csv',
+      path,
       header: [
         { id: '_id', title: 'Day' },
         { id: 'description', title: 'Description' },
@@ -127,9 +133,9 @@ const downloadSummary = async (req: Request, res: Response) => {
     });
     await csvWriter.writeRecords(formattedTask);
 
-    const file = await fsPromise.readFile('./src/summary-files/data.csv');
+    const file = await fsPromise.readFile(path);
 
-    return res.json({ success: true, file });
+    return res.json({ success: true, file, summary: formattedTask });
   } catch (err) {
     console.error(err);
     return res
